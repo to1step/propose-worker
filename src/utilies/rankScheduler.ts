@@ -23,13 +23,9 @@ type LocationAggregateStore = {
 const rankingScheduler = (): void => {
   // 매주 일요일 11시 50분에 이벤트 발생
   const rule = new schedule.RecurrenceRule();
-  // rule.dayOfWeek = 0;
-  // rule.hour = 23;
-  // rule.minute = 50;
-
-  rule.dayOfWeek = 4;
-  rule.hour = 21;
-  rule.minute = 34;
+  rule.dayOfWeek = 0;
+  rule.hour = 23;
+  rule.minute = 50;
 
   schedule.scheduleJob(rule, async () => {
     try {
