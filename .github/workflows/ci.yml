@@ -57,4 +57,6 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
+            cd docker-scheduler
+            docker pull ${{ secrets.IMAGE_NANE }} 
             docker-compose -f ${{ secrets.SCHEDULER_DOCKER_COMPOSE_FILE }} up -d
