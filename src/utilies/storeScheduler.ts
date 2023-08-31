@@ -23,13 +23,16 @@ type LocationAggregateStore = {
 const storeScheduler = (): void => {
   // 매주 토요일 11시 50분에 이벤트 발생
   const rule = new schedule.RecurrenceRule();
-  rule.dayOfWeek = 6;
+  rule.dayOfWeek = 0;
   rule.hour = 23;
   rule.minute = 50;
   rule.tz = 'Asia/Seoul';
 
+
   schedule.scheduleJob(rule, async () => {
     try {
+      const storesData: { [key:string]: string[] } = { };
+
       const [sunStart, satEnd] = dayjsKR.getWeek();
 
       // 이번주의 지역마다(구) 상위 5개 가게들을 가져오기
@@ -52,11 +55,40 @@ const storeScheduler = (): void => {
         { $unwind: '$data' },
       ]);
 
-      // 가져온 데이터들을 redis에 삽입
-      stores.map(async (store: LocationAggregateStore) => {
-        await redis.del(store.shortLocation); // 먼저 지난 번의 데이터 모두 삭제
-        await redis.rPush(store.shortLocation, store.data.store);
-      });
+
+      stores.map((store) => {
+        if(!storesData.hasOwnProperty(store.shortLocation)) {
+          storesData[store.shortLocation] = [store.data.store];
+        } else {
+          storesData[store.shortLocation].push(store.data.store)
+        }
+      })
+
+
+      for(const shortLocation in storesData) {
+        // 지난번의 데이터
+        const originData:string[] = await redis.lRange(shortLocation, 0, -1);
+
+        // 먼저 지난 번의 데이터 모두 삭제
+        await redis.del(shortLocation);
+
+        // 새로운 데이터
+        const newData:string[] = storesData[shortLocation];
+
+        // 새로운 데이터 redis에 삽입
+        newData.map(async (storeUUID:string) => {
+          await redis.rPush(shortLocation, storeUUID);
+        })
+
+        // 새로운 데이터가 5개가 되지 않는다면 기존의 데이터를 남은 개수만큼 뒤에 삽입 (단, 겹치지 않아야 함)
+        const restData = originData.slice(0, 5 - newData.length);
+
+        restData.map(async (storeUUID:string) => {
+          if(!newData.includes(storeUUID)) {
+            await redis.rPush(shortLocation, storeUUID);
+          }
+        })
+      }
 
       logger.info('Top stores saved on redis');
     } catch (err: any) {
