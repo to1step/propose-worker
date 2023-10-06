@@ -98,6 +98,13 @@ const runStoreScheduler = (): void => {
 	rule.tz = 'Asia/Seoul';
 
 	schedule.scheduleJob(rule, async () => storeScheduler());
+
+	schedule.scheduleJob('10 * * * * *', async () => {
+		// TODO: 10 초 가격으로 실행
+		/**
+		 *  IF 데이터가 존재하지 않는다면 storeScheduler() 실행
+		 */
+	});
 };
 
-export { runStoreScheduler, storeScheduler };
+export { runStoreScheduler };

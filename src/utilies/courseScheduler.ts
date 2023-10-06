@@ -60,6 +60,13 @@ const runCourseScheduler = (): void => {
 	rule.tz = 'Asia/Seoul';
 
 	schedule.scheduleJob(rule, async () => courseScheduler());
+
+	schedule.scheduleJob('10 * * * * *', async () => {
+		// TODO: 10 초 가격으로 실행
+		/**
+		 *  IF 데이터가 존재하지 않는다면 courseScheduler() 실행
+		 */
+	});
 };
 
-export { runCourseScheduler, courseScheduler };
+export { runCourseScheduler };
