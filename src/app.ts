@@ -5,80 +5,81 @@ import helmet from 'helmet';
 import Mongo from './utilies/mongo';
 import Redis from './utilies/redis';
 import WinstonLogger from './utilies/logger';
-import { needEnv } from "./utilies/envList";
-import { storeScheduler } from "./utilies/storeScheduler";
-import { courseScheduler } from "./utilies/courseScheduler";
+import { needEnv } from './utilies/envList';
+import { runStoreScheduler } from './utilies/storeScheduler';
+import { runCourseScheduler } from './utilies/courseScheduler';
 
 dotenv.config();
 
 class Server {
-    private app = express();
+	private app = express();
 
-    private mongo = Mongo.getInstance();
+	private mongo = Mongo.getInstance();
 
-    private redis = Redis.getInstance();
+	private redis = Redis.getInstance();
 
-    private logger = WinstonLogger.getInstance();
+	private logger = WinstonLogger.getInstance();
 
+	constructor() {
+		this.validateEnv();
+		this.initializeDatabase();
+		this.initializeRedis();
+		this.initializeMiddleware();
+		this.scheduler();
+	}
 
-    constructor() {
-        this.validateEnv();
-        this.initializeDatabase();
-        this.initializeRedis();
-        this.initializeMiddleware();
-        this.scheduler();
-    }
+	private validateEnv() {
+		const missingVariables: string[] = [];
 
-    private validateEnv() {
-        const missingVariables: string[] = [];
+		needEnv.forEach((envVariable) => {
+			if (!process.env[envVariable]) {
+				missingVariables.push(envVariable);
+			}
+		});
 
-        needEnv.forEach((envVariable) => {
-            if (!process.env[envVariable]) {
-                missingVariables.push(envVariable);
-            }
-        });
+		if (missingVariables.length > 0) {
+			missingVariables.forEach((variable) => {
+				this.logger.error(`${variable} is missing`);
+			});
+			process.exit(1);
+		} else {
+			this.logger.info('All required environment variables are present.');
+		}
+	}
 
-        if (missingVariables.length > 0) {
-            missingVariables.forEach((variable) => {
-                this.logger.error(`${variable} is missing`);
-            });
-            process.exit(1);
-        } else {
-            this.logger.info('All required environment variables are present.');
-        }
-    }
+	private async initializeDatabase() {
+		await this.mongo.connect();
+	}
 
-    private async initializeDatabase() {
-        await this.mongo.connect();
-    }
+	private async initializeRedis() {
+		await this.redis.connect();
+	}
 
-    private async initializeRedis() {
-        await this.redis.connect();
-    }
+	private initializeMiddleware() {
+		this.app.set('port', process.env.PORT || 8080);
+		this.app.use(helmet({ contentSecurityPolicy: false }));
+		this.app.use(express.json());
+	}
 
-    private initializeMiddleware() {
-        this.app.set('port', process.env.PORT || 8080);
-        this.app.use(helmet({ contentSecurityPolicy: false }));
-        this.app.use(express.json());
-    }
+	private scheduler() {
+		runStoreScheduler();
+		runCourseScheduler();
+	}
 
-    private scheduler() {
-        storeScheduler();
-        courseScheduler();
-    }
-
-    // server-listen
-    public listen(): void {
-        this.app.listen(this.app.get('port'), () => {
-            this.logger.info(`Scheduler Server is running on port ${this.app.get('port')}`);
-        });
-    }
+	// server-listen
+	public listen(): void {
+		this.app.listen(this.app.get('port'), () => {
+			this.logger.info(
+				`Scheduler Server is running on port ${this.app.get('port')}`
+			);
+		});
+	}
 }
 
 try {
-    const appServer = new Server();
+	const appServer = new Server();
 
-    appServer.listen();
+	appServer.listen();
 } catch (error) {
-    console.error(error);
+	console.error(error);
 }
