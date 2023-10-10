@@ -1,7 +1,7 @@
 import schedule from 'node-schedule';
-import Redis from './redis';
-import WinstonLogger from './logger';
-import DayjsKR from './dayjsKR';
+import Redis from '../utilies/redis';
+import WinstonLogger from '../utilies/logger';
+import DayjsKR from '../utilies/dayjsKR';
 import { CourseScoreModel } from '../database/models/courseScore';
 
 const logger = WinstonLogger.getInstance();
@@ -61,20 +61,6 @@ const runCourseScheduler = (): void => {
 	rule.tz = 'Asia/Seoul';
 
 	schedule.scheduleJob(rule, async () => courseScheduler());
-
-	schedule.scheduleJob('* /10 * * * *', async () => {
-		const [sunStart, satEnd] = dayjsKR.getWeek();
-
-		const flag = await redis.get(`${sunStart}-${satEnd}`);
-
-		logger.info('Check redis data..');
-
-		if(flag !== 'true') {
-			logger.error('Redis data has been deleted. Re-creating the data."');
-
-			await courseScheduler();
-		}
-	});
 };
 
-export { runCourseScheduler };
+export { courseScheduler, runCourseScheduler };
