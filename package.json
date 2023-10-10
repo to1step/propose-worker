@@ -30,7 +30,7 @@
     "node-schedule": "^2.1.1",
     "redis": "4.6.5",
     "winston": "^3.8.2",
-    "winston-daily-rotate-fil   e": "^4.7.1"
+    "winston-daily-rotate-file": "^4.7.1"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.3",
