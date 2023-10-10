@@ -6,8 +6,9 @@ import Mongo from './utilies/mongo';
 import Redis from './utilies/redis';
 import WinstonLogger from './utilies/logger';
 import { needEnv } from './utilies/envList';
-import { runStoreScheduler } from './utilies/storeScheduler';
-import { runCourseScheduler } from './utilies/courseScheduler';
+import { runStoreScheduler } from './schedulers/storeScheduler';
+import { runCourseScheduler } from './schedulers/courseScheduler';
+import { checkRedis } from "./schedulers/checkRedis";
 
 
 dotenv.config();
@@ -65,6 +66,7 @@ class Server {
 	private scheduler() {
 		runStoreScheduler();
 		runCourseScheduler();
+		checkRedis();
 	}
 
 	// server-listen
