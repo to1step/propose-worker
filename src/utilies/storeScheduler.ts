@@ -60,22 +60,30 @@ const groupStoresByLocation = (stores: LocationAggregateStore[]) => {
 };
 
 const saveDataToRedis = async (storesData: { [x: string]: any }) => {
-	storesData.forEach(async (shortLocation: string) => {
-		const originData = await redis.lRange(shortLocation, 0, -1);
+	for(const shortLocation in storesData) {
+		// 지난번의 데이터
+		const originData:string[] = await redis.lRange(shortLocation, 0, -1);
+
+		// 먼저 지난 번의 데이터 모두 삭제
 		await redis.del(shortLocation);
 
-		const newData = storesData[shortLocation];
-		newData.forEach(async (storeUUID: string) => {
-			await redis.rPush(shortLocation, storeUUID);
-		});
+		// 새로운 데이터
+		const newData:string[] = storesData[shortLocation];
 
+		// 새로운 데이터 redis에 삽입
+		newData.map(async (storeUUID:string) => {
+			await redis.rPush(shortLocation, storeUUID);
+		})
+
+		// 새로운 데이터가 5개가 되지 않는다면 기존의 데이터를 남은 개수만큼 뒤에 삽입 (단, 겹치지 않아야 함)
 		const restData = originData.slice(0, 5 - newData.length);
-		restData.forEach(async (storeUUID: string) => {
-			if (!newData.includes(storeUUID)) {
+
+		restData.map(async (storeUUID:string) => {
+			if(!newData.includes(storeUUID)) {
 				await redis.rPush(shortLocation, storeUUID);
 			}
-		});
-	});
+		})
+	}
 };
 
 const storeScheduler = async () => {
@@ -108,7 +116,11 @@ const runStoreScheduler = (): void => {
 
 		const flag = await redis.get(`${sunStart}-${satEnd}`);
 
+		logger.info('Check redis data..');
+
 		if(flag !== 'true') {
+			logger.error('Redis data has been deleted. Re-creating the data."');
+
 			await storeScheduler();
 		}
 	});

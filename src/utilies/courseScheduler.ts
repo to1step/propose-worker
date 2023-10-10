@@ -67,7 +67,11 @@ const runCourseScheduler = (): void => {
 
 		const flag = await redis.get(`${sunStart}-${satEnd}`);
 
+		logger.info('Check redis data..');
+
 		if(flag !== 'true') {
+			logger.error('Redis data has been deleted. Re-creating the data."');
+
 			await courseScheduler();
 		}
 	});
