@@ -43,6 +43,7 @@ const courseScheduler = async () => {
 			await redis.rPush('top-course', course);
 		});
 
+		await redis.set(`${sunStart}-${satEnd}`, 'true');
 		logger.info('Top courses saved on redis');
 	} catch (err: any) {
 		const errorMessage = err.stack.toString();
@@ -61,12 +62,14 @@ const runCourseScheduler = (): void => {
 
 	schedule.scheduleJob(rule, async () => courseScheduler());
 
-	schedule.scheduleJob('10 * * * * *', async () => {
-		// TODO: 10 초 가격으로 실행
-		/**
-		 * IF 데이터가 존재하지 않는다면 courseScheduler() 실행하는 방법은 MongoDB 에 데이터가 없어서 10초마다 실행하게 될 경우 문제가 될 것 같아서 이 방법은 생각해보 봐야할 것 같음
-		 * API 에서 reids 에 특정 Flag 를 넣어주고, 해당 Flag 가 존재한다면 실행
-		 */
+	schedule.scheduleJob('* /10 * * * *', async () => {
+		const [sunStart, satEnd] = dayjsKR.getWeek();
+
+		const flag = await redis.get(`${sunStart}-${satEnd}`);
+
+		if(flag !== 'true') {
+			await courseScheduler();
+		}
 	});
 };
 

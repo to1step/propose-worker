@@ -9,6 +9,7 @@ import { needEnv } from './utilies/envList';
 import { runStoreScheduler } from './utilies/storeScheduler';
 import { runCourseScheduler } from './utilies/courseScheduler';
 
+
 dotenv.config();
 
 class Server {
