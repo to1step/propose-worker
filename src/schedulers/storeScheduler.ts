@@ -1,8 +1,8 @@
 import schedule from 'node-schedule';
-import Redis from './redis';
+import Redis from '../utilies/redis';
 import { StoreScoreModel } from '../database/models/storeScore';
-import WinstonLogger from './logger';
-import DayjsKR from './dayjsKR';
+import WinstonLogger from '../utilies/logger';
+import DayjsKR from '../utilies/dayjsKR';
 
 const logger = WinstonLogger.getInstance();
 const redis = Redis.getInstance().getClient();
@@ -110,20 +110,6 @@ const runStoreScheduler = (): void => {
 	rule.tz = 'Asia/Seoul';
 
 	schedule.scheduleJob(rule, async () => storeScheduler());
-
-	schedule.scheduleJob('* /10 * * * *', async () => {
-		const [sunStart, satEnd] = dayjsKR.getWeek();
-
-		const flag = await redis.get(`${sunStart}-${satEnd}`);
-
-		logger.info('Check redis data..');
-
-		if(flag !== 'true') {
-			logger.error('Redis data has been deleted. Re-creating the data."');
-
-			await storeScheduler();
-		}
-	});
 };
 
-export { runStoreScheduler };
+export { storeScheduler, runStoreScheduler };
